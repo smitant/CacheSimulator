@@ -1,5 +1,0 @@
-hits: 7
-misses: 8
-hrate: 0.466667
-wb: 0
-wt: 0

@@ -138,7 +138,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <Text Include="accesses.txt" />
+    <Text Include="parameters.txt" />
     <Text Include="ReadMe.txt" />
+    <Text Include="statistics.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
