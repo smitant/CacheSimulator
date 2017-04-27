@@ -4,7 +4,8 @@
 #include "stdafx.h"
 using namespace std;
 struct cacheset {
-	bool dirtyBit = false, validBit = false, firstTagReplace = true;
+	bool dirtyBit = false, validBit = false;
+	int firstTagReplace = 0;
 	string tag;
 };
 
@@ -46,7 +47,7 @@ int main()
 	cacheset * cache1 = new cacheset[pow(2.0, numIndexBits)];
 	cacheset * cache2 = NULL;
 	if (directMapped == 2) {
-		cacheset * cache2 = new cacheset[pow(2.0, numIndexBits)];
+		cache2 = new cacheset[pow(2.0, numIndexBits)];
 		for (int i = 0; i < pow(2.0, numIndexBits); i++) {
 			cache2[i].firstTagReplace = 1;
 		}
@@ -70,14 +71,14 @@ int main()
 				hits++;
 			}
 			else {
-				if (cache2 != NULL) {
+				if (&cache2 != NULL) {
 					if (findHit(cache2, tag, indexBits) == true)
 						hits++;
 				}
 				misses++;
 				if (readOrWrite == 'w') {
-					//write allocate
-					if (writePolicy == "wt") {
+					//write through
+					if (strcmp(writePolicy, "wt") == 0) {
 						writeThroughs++;
 					}
 					else {
@@ -85,21 +86,34 @@ int main()
 						//we know we have a miss, so therefor no tags match
 						//THIS IS THE LAST PORTION WE NEED BEFORE ITS FINISHED.
 						//dont forget to change the dirty bit to 0!!!!
-						writeBacks++;
-						if (cache2 != NULL) {
+						
+						if (&cache2 != NULL) {
 							if (cache1[indexBits].firstTagReplace == 0) {
-								cache1[indexBits].dirtyBit = 0;
+								if (cache1[indexBits].dirtyBit == 1) {
+									writeBacks++;
+									//leave dirty bit if its a write
+								}
 							}
 							else {
-								cache2[indexBits].dirtyBit = 0;
+								if (cache2[indexBits].dirtyBit == 1) {
+									writeBacks++;
+									//leave dirty bit if its a write
+								}
+							}
+						}
+						else {
+							if (cache1[indexBits].dirtyBit == 1) {
+								writeBacks++;
+								//leave dirty bit if its a write
 							}
 						}
 
 					}
+					
 					//miss occured, if cache2 == null replace in 
-					if (allocationPolicy == "wa") {
+					if (strcmp(allocationPolicy, "wa") == 0) {
 						//have 2 cahces, check which one hasnt been written to recently
-						if (cache2 != NULL) {
+						if (&cache2 != NULL) {
 							if (cache1[indexBits].firstTagReplace == 0) {
 								//then write to that cache and swap the firstReplace tags
 								cache1[indexBits].tag = tag;
@@ -129,7 +143,7 @@ int main()
 					//else its a write-no-allocate (wna)
 					else {
 						//this if check is to make sure we are not double incrementing because of earlier steps...
-						if (writePolicy != "wt") {
+						if (strcmp(writePolicy, "wt") == 0) {
 							writeThroughs++;
 						}
 					}
@@ -140,6 +154,32 @@ int main()
 				}
 				else {
 					//its a read
+					if (&cache2 != NULL) {
+						if (cache1[indexBits].firstTagReplace == 0) {
+							//then write to that cache and swap the firstReplace tags
+							cache1[indexBits].tag = tag;
+							cache1[indexBits].validBit = 1;
+							//swapppppp
+							cache1[indexBits].firstTagReplace = 1;
+							cache2[indexBits].firstTagReplace = 0;
+						}
+						else {
+							//write to the second cache instead and swappppp
+							cache2[indexBits].tag = tag;
+							cache2[indexBits].validBit = 1;
+							//swapppppp
+							cache2[indexBits].firstTagReplace = 1;
+							cache1[indexBits].firstTagReplace = 0;
+						}
+					}
+					else {
+						cache1[indexBits].tag = tag;
+						cache1[indexBits].validBit = 1;
+						//if (cache1[indexBits].dirtyBit == 0) {
+							//cache1[indexBits].dirtyBit = 1;
+						//}
+					}
+					
 					//case of 
 					if (cache1[indexBits].dirtyBit == 1) {
 						writeBacks++;
@@ -161,7 +201,7 @@ int main()
 	}
 
 	//write the variables to the outfile
-	double hitRate = hits / misses;
+	double hitRate = (double)hits / ((double)hits+(double)misses);
 	fprintf(outFile, "hits: %d\nmisses: %d\nhrate: %f\nwb: %d\nwt: %d", hits, misses, hitRate, writeBacks, writeThroughs);
 	fcloseall();
 	return 0;

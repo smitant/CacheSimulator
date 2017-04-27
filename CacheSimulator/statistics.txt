@@ -1,5 +1,5 @@
-hits: 0
-misses: 15
-hrate: 0.000000
-wb: 7
-wt: 7
+hits: 2
+misses: 6
+hrate: 0.250000
+wb: 0
+wt: 6
